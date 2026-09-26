@@ -1,0 +1,1130 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>CYBER NEON AIR HOCKEY & PING PONG</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=M+PLUS+Rounded+1c:wght@500;800;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<style>
+body {
+font-family: 'M PLUS Rounded 1c', 'Orbitron', sans-serif;
+touch-action: none;
+user-select: none;
+-webkit-user-select: none;
+background-color: #030712;
+overflow: hidden;
+}
+.arcade-cabinet {
+background: radial-gradient(circle at center, #111827 0%, #030712 100%);
+border: 3px solid #1f2937;
+}
+.glow-text-cyan {
+text-shadow: 0 0 10px rgba(6, 182, 212, 0.8);
+}
+.glow-text-red {
+text-shadow: 0 0 10px rgba(239, 68, 68, 0.8);
+}
+/* カスタムスクロールバー */
+::-webkit-scrollbar {
+width: 6px;
+}
+::-webkit-scrollbar-thumb {
+background: #374151;
+border-radius: 9999px;
+}
+</style>
+</head>
+<body class="h-screen w-screen flex flex-col items-center justify-center p-2 text-white">
+
+
+<!-- MAIN ARCADE CONTAINER -->
+<div class="relative w-full max-w-lg h-full max-h-[920px] flex flex-col items-center justify-between arcade-cabinet rounded-3xl p-3 shadow-2xl border border-cyan-500/30 overflow-hidden">
+
+
+<!-- HEADER / TITLE BAR -->
+<div class="w-full bg-slate-950/90 border-b border-slate-800 py-2 px-4 flex items-center justify-between rounded-t-2xl shadow-lg z-20">
+<div class="flex items-center gap-2">
+<i class="fa-solid fa-table-tennis-paddle-ball text-cyan-400 text-lg animate-bounce"></i>
+<span class="font-black text-sm sm:text-base tracking-widest text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-amber-300 to-red-500">
+ネオン・エアホッケー
+</span>
+</div>
+<button onclick="openRules()" class="px-2.5 py-1 bg-cyan-950/80 border border-cyan-500/50 rounded-lg text-[11px] font-bold text-cyan-300 hover:bg-cyan-900 flex items-center gap-1 active:scale-95 transition-all">
+<i class="fa-solid fa-circle-question"></i> ルール
+</button>
+</div>
+
+
+<!-- SCOREBOARD BOARD -->
+<div class="w-full flex justify-between items-center px-6 py-2 bg-slate-900/80 border-b border-slate-800 z-20">
+<!-- PLAYER 2 / CPU -->
+<div class="flex flex-col items-start">
+<span id="p2-label" class="text-[10px] font-bold text-red-400 tracking-wider">CPU</span>
+<span id="p2-score" class="font-black text-2xl sm:text-3xl text-red-500 glow-text-red">0</span>
+</div>
+
+
+<!-- VS / TARGET SCORES -->
+<div class="flex flex-col items-center">
+<span class="text-[9px] text-slate-400 font-bold">先取点数: <span id="target-score-display" class="text-amber-400">5</span>点</span>
+<span class="text-xs text-cyan-400 font-black tracking-widest">VS</span>
+</div>
+
+
+<!-- PLAYER 1 -->
+<div class="flex flex-col items-end">
+<span id="p1-label" class="text-[10px] font-bold text-cyan-400 tracking-wider">プレイヤー1</span>
+<span id="p1-score" class="font-black text-2xl sm:text-3xl text-cyan-400 glow-text-cyan">0</span>
+</div>
+</div>
+
+
+<!-- CANVAS AIR HOCKEY TABLE -->
+<div id="canvas-container" class="relative w-full flex-1 flex items-center justify-center my-2 overflow-hidden rounded-2xl bg-slate-950 border-2 border-slate-800 shadow-inner">
+<canvas id="hockey-canvas" class="block w-full h-full rounded-2xl"></canvas>
+
+
+<!-- START / MENU OVERLAY -->
+<div id="start-overlay" class="absolute inset-0 bg-slate-950/95 backdrop-blur-md flex flex-col items-center justify-between p-4 sm:p-6 z-30 transition-all duration-300 overflow-y-auto">
+
+
+<!-- TITLE HEADER -->
+<div class="text-center mt-2">
+<h1 class="text-2xl sm:text-3xl font-black tracking-wider text-cyan-400 glow-text-cyan mb-1">
+NEON PUCK & BALL
+</h1>
+<p class="text-xs text-slate-400 font-medium">カスタマイズ対戦エアホッケー</p>
+</div>
+
+
+<!-- EASY RULES BOX -->
+<div class="w-full bg-slate-900/90 border border-slate-700/80 rounded-2xl p-3 text-left space-y-1.5 shadow-md my-2">
+<div class="text-xs font-black text-amber-400 flex items-center gap-1.5">
+<i class="fa-solid fa-circle-info text-amber-400"></i> 簡単ルール＆操作
+</div>
+<ul class="text-[11px] text-slate-300 space-y-1 leading-snug">
+<li> <strong>勝敗:</strong> 相手のゴールに玉を叩き込んで <strong>設定した先取点数</strong> を先に取った方が勝ち！</li>
+<li> <strong>操作:</strong> 画面上で <strong>指やくっつけたマウスをスライド移動</strong> して弾き返すだけ！</li>
+</ul>
+</div>
+
+
+<!-- CUSTOMIZATION OPTIONS -->
+<div class="w-full space-y-3">
+<!-- MODE SELECT -->
+<div>
+<label class="text-[11px] font-bold text-slate-300 mb-1 block">対戦モード</label>
+<div class="grid grid-cols-2 gap-2">
+<button id="mode-1p" onclick="setMode('1p')" class="py-2 rounded-xl border-2 border-cyan-500 bg-cyan-950/60 text-cyan-300 font-bold text-xs">
+ 1人プレイ (vs CPU)
+</button>
+<button id="mode-2p" onclick="setMode('2p')" class="py-2 rounded-xl border-2 border-slate-700 bg-slate-900/60 text-slate-400 font-bold text-xs">
+ 2人対戦 (1台の画面)
+</button>
+</div>
+</div>
+
+
+<!-- PLAYER NAMES INPUT -->
+<div class="grid grid-cols-2 gap-2">
+<div>
+<label class="text-[10px] font-bold text-cyan-300 mb-1 block">あなた(下)の名前</label>
+<input type="text" id="p1-name-input" value="プレイヤー1" maxlength="10" placeholder="名前を入力" class="w-full px-2.5 py-1.5 bg-slate-900 border border-slate-700 rounded-xl text-xs text-cyan-300 font-bold focus:outline-none focus:border-cyan-400 transition-all">
+</div>
+<div>
+<label class="text-[10px] font-bold text-red-400 mb-1 block">あいて(上)の名前</label>
+<input type="text" id="p2-name-input" value="CPU" maxlength="10" placeholder="名前を入力" class="w-full px-2.5 py-1.5 bg-slate-900 border border-slate-700 rounded-xl text-xs text-red-400 font-bold focus:outline-none focus:border-red-400 transition-all">
+</div>
+</div>
+
+
+<!-- PADDLE COLOR SELECT (P1 & P2) -->
+<div class="grid grid-cols-2 gap-2">
+<!-- P1 COLOR -->
+<div>
+<label class="text-[10px] font-bold text-cyan-300 mb-1 block">あなた(下)の色</label>
+<div class="grid grid-cols-4 gap-1">
+<button onclick="setP1Color('#06b6d4')" class="p1-color-btn p-1.5 rounded-lg border-2 border-cyan-400 bg-cyan-950 flex justify-center items-center">
+<span class="w-3.5 h-3.5 rounded-full bg-cyan-400 shadow-[0_0_6px_#06b6d4]"></span>
+</button>
+<button onclick="setP1Color('#ec4899')" class="p1-color-btn p-1.5 rounded-lg border border-slate-700 bg-slate-900 flex justify-center items-center">
+<span class="w-3.5 h-3.5 rounded-full bg-pink-500 shadow-[0_0_6px_#ec4899]"></span>
+</button>
+<button onclick="setP1Color('#a3e635')" class="p1-color-btn p-1.5 rounded-lg border border-slate-700 bg-slate-900 flex justify-center items-center">
+<span class="w-3.5 h-3.5 rounded-full bg-lime-400 shadow-[0_0_6px_#a3e635]"></span>
+</button>
+<button onclick="setP1Color('#f97316')" class="p1-color-btn p-1.5 rounded-lg border border-slate-700 bg-slate-900 flex justify-center items-center">
+<span class="w-3.5 h-3.5 rounded-full bg-orange-500 shadow-[0_0_6px_#f97316]"></span>
+</button>
+</div>
+</div>
+
+
+<!-- P2 COLOR -->
+<div>
+<label class="text-[10px] font-bold text-red-400 mb-1 block">あいて(上)の色</label>
+<div class="grid grid-cols-4 gap-1">
+<button onclick="setP2Color('#ef4444')" class="p2-color-btn p-1.5 rounded-lg border-2 border-red-400 bg-red-950 flex justify-center items-center">
+<span class="w-3.5 h-3.5 rounded-full bg-red-500 shadow-[0_0_6px_#ef4444]"></span>
+</button>
+<button onclick="setP2Color('#facc15')" class="p2-color-btn p-1.5 rounded-lg border border-slate-700 bg-slate-900 flex justify-center items-center">
+<span class="w-3.5 h-3.5 rounded-full bg-yellow-400 shadow-[0_0_6px_#facc15]"></span>
+</button>
+<button onclick="setP2Color('#a855f7')" class="p2-color-btn p-1.5 rounded-lg border border-slate-700 bg-slate-900 flex justify-center items-center">
+<span class="w-3.5 h-3.5 rounded-full bg-purple-500 shadow-[0_0_6px_#a855f7]"></span>
+</button>
+<button onclick="setP2Color('#3b82f6')" class="p2-color-btn p-1.5 rounded-lg border border-slate-700 bg-slate-900 flex justify-center items-center">
+<span class="w-3.5 h-3.5 rounded-full bg-blue-500 shadow-[0_0_6px_#3b82f6]"></span>
+</button>
+</div>
+</div>
+</div>
+
+
+<!-- CPU DIFFICULTY (1P only) -->
+<div id="diff-container">
+<label class="text-[11px] font-bold text-slate-300 mb-1 block">CPUのつよさ</label>
+<div class="grid grid-cols-3 gap-1.5">
+<button onclick="setDifficulty('easy')" class="diff-btn py-1.5 text-xs rounded-xl border border-slate-700 bg-slate-900 text-slate-300 font-bold">やさしい</button>
+<button onclick="setDifficulty('normal')" class="diff-btn py-1.5 text-xs rounded-xl border-2 border-cyan-400 bg-cyan-950 text-cyan-300 font-bold">ふつう</button>
+<button onclick="setDifficulty('god')" class="diff-btn py-1.5 text-xs rounded-xl border border-slate-700 bg-slate-900 text-red-400 font-bold">むずかしい</button>
+</div>
+</div>
+
+
+<!-- TARGET SCORE SELECT -->
+<div>
+<label class="text-[11px] font-bold text-slate-300 mb-1 flex justify-between items-center">
+<span> 勝利に必要な点数（先取点数）</span>
+<span id="target-score-label" class="text-amber-400 font-black text-xs">5 点</span>
+</label>
+<div class="grid grid-cols-4 gap-1">
+<button onclick="setTargetScore(3)" class="target-score-btn py-1.5 rounded-lg border border-slate-700 bg-slate-900 text-slate-300 font-bold text-xs">3点</button>
+<button onclick="setTargetScore(5)" class="target-score-btn py-1.5 rounded-lg border-2 border-amber-400 bg-amber-950/60 text-amber-300 font-black text-xs">5点</button>
+<button onclick="setTargetScore(7)" class="target-score-btn py-1.5 rounded-lg border border-slate-700 bg-slate-900 text-slate-300 font-bold text-xs">7点</button>
+<button onclick="setTargetScore(10)" class="target-score-btn py-1.5 rounded-lg border border-slate-700 bg-slate-900 text-slate-300 font-bold text-xs">10点</button>
+</div>
+</div>
+
+
+<!-- BALL COUNT SELECT (1 to 5) -->
+<div>
+<label class="text-[11px] font-bold text-slate-300 mb-1 flex justify-between items-center">
+<span> 玉の数（マルチボール）</span>
+<span id="ball-count-label" class="text-amber-400 font-black text-xs">1 個</span>
+</label>
+<div class="grid grid-cols-5 gap-1">
+<button onclick="setBallCount(1)" class="ball-cnt-btn py-1.5 rounded-lg border-2 border-amber-400 bg-amber-950/60 text-amber-300 font-black text-xs">1個</button>
+<button onclick="setBallCount(2)" class="ball-cnt-btn py-1.5 rounded-lg border border-slate-700 bg-slate-900 text-slate-300 font-bold text-xs">2個</button>
+<button onclick="setBallCount(3)" class="ball-cnt-btn py-1.5 rounded-lg border border-slate-700 bg-slate-900 text-slate-300 font-bold text-xs">3個</button>
+<button onclick="setBallCount(4)" class="ball-cnt-btn py-1.5 rounded-lg border border-slate-700 bg-slate-900 text-slate-300 font-bold text-xs">4個</button>
+<button onclick="setBallCount(5)" class="ball-cnt-btn py-1.5 rounded-lg border border-slate-700 bg-slate-900 text-slate-300 font-bold text-xs">5個</button>
+</div>
+</div>
+
+
+<!-- BALL STYLE & COLOR SELECT -->
+<div>
+<label class="text-[11px] font-bold text-slate-300 mb-1 block">玉のデザイン・カラー</label>
+<div class="grid grid-cols-5 gap-1.5">
+<button onclick="setBallStyle('yellow')" class="ball-style-btn py-2 rounded-xl border-2 border-yellow-400 bg-yellow-400/20 text-yellow-300 font-bold text-[10px] flex flex-col items-center justify-center gap-0.5">
+<span class="w-4 h-4 rounded-full bg-yellow-400 shadow-[0_0_8px_#facc15]"></span>
+<span>ネオン</span>
+</button>
+<button onclick="setBallStyle('pingpong')" class="ball-style-btn py-2 rounded-xl border border-slate-700 bg-slate-900 text-slate-300 font-bold text-[10px] flex flex-col items-center justify-center gap-0.5">
+<span class="w-4 h-4 rounded-full bg-white shadow-md"></span>
+<span>ピンポン</span>
+</button>
+<button onclick="setBallStyle('pink')" class="ball-style-btn py-2 rounded-xl border border-slate-700 bg-slate-900 text-slate-300 font-bold text-[10px] flex flex-col items-center justify-center gap-0.5">
+<span class="w-4 h-4 rounded-full bg-pink-500 shadow-[0_0_8px_#ec4899]"></span>
+<span>ピンク</span>
+</button>
+<button onclick="setBallStyle('lime')" class="ball-style-btn py-2 rounded-xl border border-slate-700 bg-slate-900 text-slate-300 font-bold text-[10px] flex flex-col items-center justify-center gap-0.5">
+<span class="w-4 h-4 rounded-full bg-lime-400 shadow-[0_0_8px_#a3e635]"></span>
+<span>ライム</span>
+</button>
+<button onclick="setBallStyle('cyan')" class="ball-style-btn py-2 rounded-xl border border-slate-700 bg-slate-900 text-slate-300 font-bold text-[10px] flex flex-col items-center justify-center gap-0.5">
+<span class="w-4 h-4 rounded-full bg-cyan-400 shadow-[0_0_8px_#22d3ee]"></span>
+<span>シアン</span>
+</button>
+</div>
+</div>
+</div>
+
+
+<!-- GAME START BUTTON -->
+<div class="w-full mt-3 mb-1">
+<button id="btn-start-game" onclick="startGame()" class="w-full py-3.5 bg-gradient-to-r from-cyan-500 via-teal-400 to-emerald-400 text-slate-950 font-black text-base sm:text-lg rounded-2xl shadow-lg shadow-cyan-500/30 hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-2">
+<i class="fa-solid fa-play text-xl"></i>
+<span>ゲームスタート！</span>
+</button>
+</div>
+</div>
+
+
+<!-- GOAL ANNOUNCEMENT BANNER -->
+<div id="goal-banner" class="hidden absolute inset-x-0 top-1/2 -translate-y-1/2 bg-gradient-to-r from-cyan-500/90 via-amber-400/90 to-red-500/90 text-slate-950 font-black text-2xl sm:text-4xl py-3 text-center tracking-widest shadow-2xl z-20 animate-bounce">
+GOAL!!
+</div>
+
+
+<!-- RESULT / RESET MODAL -->
+<div id="result-overlay" class="hidden absolute inset-0 bg-slate-950/90 backdrop-blur-md flex flex-col items-center justify-center p-6 z-40">
+<i class="fa-solid fa-trophy text-amber-400 text-5xl mb-3 animate-bounce"></i>
+<h2 id="winner-title" class="text-2xl font-black text-cyan-400 text-center mb-1">勝者決定！</h2>
+<p id="winner-detail" class="text-xs text-slate-300 mb-6 text-center">スコア: 5 - 0</p>
+
+
+<div class="w-full space-y-2.5 max-w-xs">
+<button onclick="rematchGame()" class="w-full py-3 bg-gradient-to-r from-cyan-500 to-emerald-400 text-slate-950 font-black text-sm rounded-xl shadow-lg active:scale-95 transition-all flex items-center justify-center gap-2">
+<i class="fa-solid fa-rotate-right text-base"></i>
+<span>同じ名前でリセットして再戦</span>
+</button>
+<button onclick="resetGame()" class="w-full py-2.5 bg-slate-900 border border-slate-700 text-slate-300 font-bold text-xs rounded-xl hover:bg-slate-800 active:scale-95 transition-all flex items-center justify-center gap-2">
+<i class="fa-solid fa-gear text-amber-400"></i>
+<span>名前・設定を変更する</span>
+</button>
+</div>
+</div>
+</div>
+
+
+<!-- BOTTOM ARCADE BAR -->
+<div class="w-full bg-slate-950 border-t border-slate-800 p-2 flex items-center justify-between rounded-b-2xl z-20">
+<button onclick="toggleAudio()" id="btn-audio" class="px-3 py-1.5 bg-slate-900 border border-slate-700 rounded-xl text-slate-300 text-xs flex items-center gap-2 hover:bg-slate-800">
+<i class="fa-solid fa-volume-high text-cyan-400"></i>
+<span class="text-[10px] font-bold">サウンド: ON</span>
+</button>
+
+
+<button onclick="resetGame()" class="px-3 py-1.5 bg-slate-900 border border-slate-700 rounded-xl text-slate-300 text-xs flex items-center gap-2 hover:bg-slate-800">
+<i class="fa-solid fa-rotate-left text-amber-400"></i>
+<span class="text-[10px] font-bold">設定画面へ</span>
+</button>
+</div>
+</div>
+
+
+<!-- RULES MODAL -->
+<div id="rules-modal" class="hidden fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+<div class="bg-slate-900 border-2 border-cyan-500/80 rounded-3xl p-5 max-w-md w-full space-y-4 shadow-2xl">
+<div class="flex items-center justify-between border-b border-slate-800 pb-2">
+<h2 class="text-lg font-black text-cyan-400 flex items-center gap-2">
+<i class="fa-solid fa-book-open"></i> ルール＆操作説明
+</h2>
+<button onclick="closeRules()" class="text-slate-400 hover:text-white p-1">
+<i class="fa-solid fa-xmark text-xl"></i>
+</button>
+</div>
+
+
+<div class="space-y-3 text-xs text-slate-300 leading-relaxed max-h-[60vh] overflow-y-auto pr-1">
+<div class="bg-slate-950 p-3 rounded-xl border border-slate-800">
+<h3 class="font-bold text-amber-400 mb-1"> 勝利条件</h3>
+<p>相手（上側）のゴールに玉を打ち込み、設定した<strong>勝利点数</strong>を先に取った方の勝ちです！</p>
+</div>
+
+
+<div class="bg-slate-950 p-3 rounded-xl border border-slate-800">
+<h3 class="font-bold text-cyan-400 mb-1"> 操作方法</h3>
+<p><strong>画面下半分</strong>に指やマウスを置き、<strong>くっつけたままスライド（ドラッグ）</strong>すると、その動きに合わせてパドルが滑らかに移動します。（置いた瞬間の瞬間移動は起きません）</p>
+<p class="mt-1 text-slate-400">※勢いよく弾くようにスライドさせると、高速なスマッシュショットが打てます！</p>
+</div>
+
+
+<div class="bg-slate-950 p-3 rounded-xl border border-slate-800">
+<h3 class="font-bold text-emerald-400 mb-1"> マルチボールモード</h3>
+<p>設定画面で玉の数を増やすと、複数の玉（ピンポン玉など）が同時にコートに跳び交います。どれがゴールしても1点ゲット！</p>
+</div>
+</div>
+
+
+<button onclick="closeRules()" class="w-full py-2.5 bg-cyan-500 text-slate-950 font-black rounded-xl hover:bg-cyan-400 transition-all">
+わかった！
+</button>
+</div>
+</div>
+
+
+<script>
+/* WEB AUDIO SOUND SYSTEM */
+class ArcadeAudio {
+constructor() {
+this.ctx = null;
+this.enabled = true;
+}
+
+
+init() {
+if (!this.ctx) {
+this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+}
+}
+
+
+playHit(volume = 0.3, pitch = 1.0) {
+if (!this.enabled) return;
+this.init();
+const now = this.ctx.currentTime;
+
+
+const osc = this.ctx.createOscillator();
+const gain = this.ctx.createGain();
+
+
+osc.type = 'triangle';
+osc.frequency.setValueAtTime(220 * pitch, now);
+osc.frequency.exponentialRampToValueAtTime(60 * pitch, now + 0.08);
+
+
+gain.gain.setValueAtTime(volume, now);
+gain.gain.exponentialRampToValueAtTime(0.001, now + 0.08);
+
+
+osc.connect(gain);
+gain.connect(this.ctx.destination);
+
+
+osc.start(now);
+osc.stop(now + 0.08);
+}
+
+
+playGoal() {
+if (!this.enabled) return;
+this.init();
+const now = this.ctx.currentTime;
+
+
+const notes = [261.63, 329.63, 392.00, 523.25];
+notes.forEach((freq, idx) => {
+const osc = this.ctx.createOscillator();
+const gain = this.ctx.createGain();
+
+
+osc.type = 'sawtooth';
+osc.frequency.setValueAtTime(freq, now + idx * 0.06);
+
+
+gain.gain.setValueAtTime(0.25, now + idx * 0.06);
+gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.06 + 0.25);
+
+
+osc.connect(gain);
+gain.connect(this.ctx.destination);
+
+
+osc.start(now + idx * 0.06);
+osc.stop(now + idx * 0.06 + 0.25);
+});
+}
+}
+
+
+const audio = new ArcadeAudio();
+function toggleAudio() {
+audio.enabled = !audio.enabled;
+document.getElementById('btn-audio').innerHTML = audio.enabled ?
+'<i class="fa-solid fa-volume-high text-cyan-400"></i><span class="text-[10px] font-bold">サウンド: ON</span>' :
+'<i class="fa-solid fa-volume-xmark text-slate-500"></i><span class="text-[10px] font-bold">サウンド: OFF</span>';
+}
+
+
+function openRules() { document.getElementById('rules-modal').classList.remove('hidden'); }
+function closeRules() { document.getElementById('rules-modal').classList.add('hidden'); }
+
+
+const canvas = document.getElementById('hockey-canvas');
+const ctx = canvas.getContext('2d');
+const container = document.getElementById('canvas-container');
+
+
+// GAME CONFIG & STATE
+let gameMode = '1p'; // '1p' or '2p'
+let difficulty = 'normal'; // easy, normal, god
+let ballCountConfig = 1; // 1 to 5
+let ballStyleConfig = 'yellow'; // yellow, pingpong, pink, lime, cyan
+let isPlaying = false;
+
+
+let p1Score = 0;
+let p2Score = 0;
+let maxScore = 5;
+
+
+// Canvas Scale & Physics
+let W = 400;
+let H = 600;
+
+
+const PUCK_RADIUS = 15;
+const MALLET_RADIUS = 26;
+const GOAL_WIDTH = 140;
+
+
+// Ball Palette Configurations
+const BALL_COLORS = {
+yellow: { fill: '#facc15', glow: '#facc15', isPingPong: false },
+pingpong: { fill: '#ffffff', glow: '#e2e8f0', isPingPong: true },
+pink: { fill: '#ec4899', glow: '#ec4899', isPingPong: false },
+lime: { fill: '#a3e635', glow: '#a3e635', isPingPong: false },
+cyan: { fill: '#22d3ee', glow: '#22d3ee', isPingPong: false }
+};
+
+
+// Entities
+let pucks = [];
+let p1 = { x: 200, y: 520, vx: 0, vy: 0, radius: MALLET_RADIUS, color: '#06b6d4' };
+let p2 = { x: 200, y: 80, vx: 0, vy: 0, radius: MALLET_RADIUS, color: '#ef4444' };
+
+
+let particles = [];
+
+
+function setP1Color(hex) {
+p1.color = hex;
+document.getElementById('p1-label').style.color = hex;
+document.getElementById('p1-score').style.color = hex;
+document.getElementById('p1-score').style.textShadow = `0 0 10px ${hex}`;
+const btns = document.querySelectorAll('.p1-color-btn');
+btns.forEach(b => {
+b.className = 'p1-color-btn p-1.5 rounded-lg border border-slate-700 bg-slate-900 flex justify-center items-center';
+});
+event.currentTarget.className = 'p1-color-btn p-1.5 rounded-lg border-2 border-cyan-400 bg-cyan-950 flex justify-center items-center';
+}
+
+
+function setP2Color(hex) {
+p2.color = hex;
+document.getElementById('p2-label').style.color = hex;
+document.getElementById('p2-score').style.color = hex;
+document.getElementById('p2-score').style.textShadow = `0 0 10px ${hex}`;
+const btns = document.querySelectorAll('.p2-color-btn');
+btns.forEach(b => {
+b.className = 'p2-color-btn p-1.5 rounded-lg border border-slate-700 bg-slate-900 flex justify-center items-center';
+});
+event.currentTarget.className = 'p2-color-btn p-1.5 rounded-lg border-2 border-red-400 bg-red-950 flex justify-center items-center';
+}
+
+
+function resizeCanvas() {
+const rect = container.getBoundingClientRect();
+canvas.width = rect.width;
+canvas.height = rect.height;
+W = canvas.width;
+H = canvas.height;
+
+
+if (!isPlaying) {
+resetPositions();
+}
+}
+window.addEventListener('resize', resizeCanvas);
+
+
+function setMode(mode) {
+gameMode = mode;
+document.getElementById('mode-1p').className = mode === '1p' ?
+'py-2 rounded-xl border-2 border-cyan-500 bg-cyan-950/60 text-cyan-300 font-bold text-xs' :
+'py-2 rounded-xl border-2 border-slate-700 bg-slate-900/60 text-slate-400 font-bold text-xs';
+
+
+document.getElementById('mode-2p').className = mode === '2p' ?
+'py-2 rounded-xl border-2 border-cyan-500 bg-cyan-950/60 text-cyan-300 font-bold text-xs' :
+'py-2 rounded-xl border-2 border-slate-700 bg-slate-900/60 text-slate-400 font-bold text-xs';
+
+
+const p2Input = document.getElementById('p2-name-input');
+if (mode === '1p') {
+p2Input.value = `CPU(${getDiffText()})`;
+} else if (p2Input.value.startsWith('CPU')) {
+p2Input.value = 'プレイヤー2';
+}
+
+
+document.getElementById('diff-container').style.display = mode === '1p' ? 'block' : 'none';
+}
+
+
+function getDiffText() {
+if (difficulty === 'easy') return 'やさしい';
+if (difficulty === 'normal') return 'ふつう';
+return 'むずかしい';
+}
+
+
+function setDifficulty(diff) {
+difficulty = diff;
+const btns = document.querySelectorAll('.diff-btn');
+btns.forEach(b => b.className = 'diff-btn py-1.5 text-xs rounded-xl border border-slate-700 bg-slate-900 text-slate-300 font-bold');
+event.target.className = 'diff-btn py-1.5 text-xs rounded-xl border-2 border-cyan-400 bg-cyan-950 text-cyan-300 font-bold';
+
+
+const p2Input = document.getElementById('p2-name-input');
+if (gameMode === '1p') {
+p2Input.value = `CPU(${getDiffText()})`;
+}
+}
+
+
+function setTargetScore(score) {
+maxScore = score;
+document.getElementById('target-score-label').textContent = `${score} 点`;
+document.getElementById('target-score-display').textContent = score;
+
+
+const btns = document.querySelectorAll('.target-score-btn');
+btns.forEach((b) => {
+if (parseInt(b.textContent) === score) {
+b.className = 'target-score-btn py-1.5 rounded-lg border-2 border-amber-400 bg-amber-950/60 text-amber-300 font-black text-xs';
+} else {
+b.className = 'target-score-btn py-1.5 rounded-lg border border-slate-700 bg-slate-900 text-slate-300 font-bold text-xs';
+}
+});
+}
+
+
+function setBallCount(count) {
+ballCountConfig = count;
+document.getElementById('ball-count-label').textContent = `${count} 個`;
+const btns = document.querySelectorAll('.ball-cnt-btn');
+btns.forEach((b, idx) => {
+if (idx + 1 === count) {
+b.className = 'ball-cnt-btn py-1.5 rounded-lg border-2 border-amber-400 bg-amber-950/60 text-amber-300 font-black text-xs';
+} else {
+b.className = 'ball-cnt-btn py-1.5 rounded-lg border border-slate-700 bg-slate-900 text-slate-300 font-bold text-xs';
+}
+});
+}
+
+
+function setBallStyle(style) {
+ballStyleConfig = style;
+const btns = document.querySelectorAll('.ball-style-btn');
+btns.forEach(b => {
+b.classList.remove('border-yellow-400', 'border-cyan-400', 'border-2');
+b.classList.add('border', 'border-slate-700');
+});
+event.currentTarget.classList.remove('border', 'border-slate-700');
+event.currentTarget.classList.add('border-2', 'border-yellow-400');
+}
+
+
+function applyPlayerNames() {
+const p1Input = document.getElementById('p1-name-input').value.trim() || 'プレイヤー1';
+const p2Input = document.getElementById('p2-name-input').value.trim() || (gameMode === '1p' ? 'CPU' : 'プレイヤー2');
+
+
+document.getElementById('p1-label').textContent = p1Input;
+document.getElementById('p2-label').textContent = p2Input;
+}
+
+
+function startGame() {
+applyPlayerNames();
+p1Score = 0;
+p2Score = 0;
+updateScores();
+
+
+document.getElementById('start-overlay').classList.add('hidden');
+document.getElementById('result-overlay').classList.add('hidden');
+isPlaying = true;
+resetPositions();
+requestAnimationFrame(gameLoop);
+}
+
+
+function rematchGame() {
+document.getElementById('result-overlay').classList.add('hidden');
+p1Score = 0;
+p2Score = 0;
+updateScores();
+isPlaying = true;
+resetPositions();
+requestAnimationFrame(gameLoop);
+}
+
+
+function resetGame() {
+isPlaying = false;
+p1Score = 0;
+p2Score = 0;
+updateScores();
+document.getElementById('result-overlay').classList.add('hidden');
+document.getElementById('start-overlay').classList.remove('hidden');
+}
+
+
+function createPuck(index, total) {
+const spacing = (W - 100) / (total + 1);
+const startX = 50 + spacing * (index + 1);
+return {
+x: startX,
+y: H / 2 + (Math.random() - 0.5) * 20,
+vx: (Math.random() - 0.5) * 5,
+vy: (Math.random() < 0.5 ? 1 : -1) * (4 + Math.random() * 2),
+radius: PUCK_RADIUS,
+trail: []
+};
+}
+
+
+function resetPositions() {
+pucks = [];
+for (let i = 0; i < ballCountConfig; i++) {
+pucks.push(createPuck(i, ballCountConfig));
+}
+
+
+p1.x = W / 2;
+p1.y = H - 80;
+p1.vx = 0; p1.vy = 0;
+
+
+p2.x = W / 2;
+p2.y = 80;
+p2.vx = 0; p2.vy = 0;
+}
+
+
+function respawnSinglePuck(puck) {
+puck.x = W / 2 + (Math.random() - 0.5) * 60;
+puck.y = H / 2;
+puck.vx = (Math.random() - 0.5) * 4;
+puck.vy = (Math.random() < 0.5 ? 1 : -1) * 5;
+puck.trail = [];
+}
+
+
+function updateScores() {
+document.getElementById('p1-score').textContent = p1Score;
+document.getElementById('p2-score').textContent = p2Score;
+}
+
+
+// TOUCH & POINTER HANDLING
+let activeTouches = {};
+
+
+canvas.addEventListener('pointerdown', handlePointerDown);
+canvas.addEventListener('pointermove', handlePointerMove);
+canvas.addEventListener('pointerup', handlePointerEnd);
+canvas.addEventListener('pointercancel', handlePointerEnd);
+
+
+function handlePointerDown(e) {
+if (!isPlaying) return;
+const rect = canvas.getBoundingClientRect();
+const px = e.clientX - rect.left;
+const py = e.clientY - rect.top;
+
+
+// 指を置いた時点の位置を記録（パドルを瞬間移動させない）
+activeTouches[e.pointerId] = { x: px, y: py, initialY: py };
+}
+
+
+function handlePointerMove(e) {
+if (!isPlaying || !activeTouches[e.pointerId]) return;
+const rect = canvas.getBoundingClientRect();
+const px = e.clientX - rect.left;
+const py = e.clientY - rect.top;
+
+
+const prev = activeTouches[e.pointerId];
+const dx = px - prev.x;
+const dy = py - prev.y;
+
+
+// 位置を更新
+activeTouches[e.pointerId].x = px;
+activeTouches[e.pointerId].y = py;
+
+
+// スライドさせた差分（相対移動）でパドルを動かす
+updateMalletRelative(prev.initialY, dx, dy);
+}
+
+
+function handlePointerEnd(e) {
+delete activeTouches[e.pointerId];
+}
+
+
+function updateMalletRelative(startY, dx, dy) {
+// 画面下半分でのタッチ操作（Player 1）
+if (startY > H / 2) {
+const targetX = Math.max(MALLET_RADIUS, Math.min(W - MALLET_RADIUS, p1.x + dx));
+const targetY = Math.max(H / 2 + MALLET_RADIUS, Math.min(H - MALLET_RADIUS, p1.y + dy));
+
+
+p1.vx = targetX - p1.x;
+p1.vy = targetY - p1.y;
+p1.x = targetX;
+p1.y = targetY;
+}
+// 2Pモード・画面上半分でのタッチ操作（Player 2）
+else if (gameMode === '2p' && startY <= H / 2) {
+const targetX = Math.max(MALLET_RADIUS, Math.min(W - MALLET_RADIUS, p2.x + dx));
+const targetY = Math.max(MALLET_RADIUS, Math.min(H / 2 - MALLET_RADIUS, p2.y + dy));
+
+
+p2.vx = targetX - p2.x;
+p2.vy = targetY - p2.y;
+p2.x = targetX;
+p2.y = targetY;
+}
+}
+
+
+function updateCPU() {
+if (gameMode !== '1p' || pucks.length === 0) return;
+
+
+let reactionSpeed = 0.08;
+if (difficulty === 'easy') reactionSpeed = 0.04;
+if (difficulty === 'normal') reactionSpeed = 0.09;
+if (difficulty === 'god') reactionSpeed = 0.25;
+
+
+// Target nearest puck in CPU half
+let closestPuck = pucks[0];
+let minDist = 9999;
+pucks.forEach(p => {
+if (p.y < H / 2 && p.y < minDist) {
+minDist = p.y;
+closestPuck = p;
+}
+});
+
+
+let targetX = closestPuck ? closestPuck.x : W / 2;
+let targetY = 80;
+
+
+if (closestPuck && closestPuck.y < H / 2) {
+targetX = closestPuck.x;
+targetY = closestPuck.y - 10;
+} else {
+targetX = W / 2 + Math.sin(Date.now() * 0.003) * 30;
+targetY = 90;
+}
+
+
+const nextX = p2.x + (targetX - p2.x) * reactionSpeed;
+const nextY = p2.y + (targetY - p2.y) * reactionSpeed;
+
+
+const clampedX = Math.max(MALLET_RADIUS, Math.min(W - MALLET_RADIUS, nextX));
+const clampedY = Math.max(MALLET_RADIUS, Math.min(H / 2 - MALLET_RADIUS, nextY));
+
+
+p2.vx = clampedX - p2.x;
+p2.vy = clampedY - p2.y;
+p2.x = clampedX;
+p2.y = clampedY;
+}
+
+
+function createSpark(x, y, color) {
+for (let i = 0; i < 10; i++) {
+const angle = Math.random() * Math.PI * 2;
+const speed = 2 + Math.random() * 5;
+particles.push({
+x: x, y: y,
+vx: Math.cos(angle) * speed,
+vy: Math.sin(angle) * speed,
+color: color,
+life: 1.0
+});
+}
+}
+
+
+function handleCircleCollision(puck, mallet) {
+const dx = puck.x - mallet.x;
+const dy = puck.y - mallet.y;
+const dist = Math.hypot(dx, dy);
+const minDist = puck.radius + mallet.radius;
+
+
+if (dist < minDist) {
+const angle = Math.atan2(dy, dx);
+puck.x = mallet.x + Math.cos(angle) * minDist;
+puck.y = mallet.y + Math.sin(angle) * minDist;
+
+
+const hitSpeed = Math.hypot(mallet.vx, mallet.vy);
+const power = Math.max(6, hitSpeed * 1.2);
+
+
+puck.vx = Math.cos(angle) * power + mallet.vx * 0.5;
+puck.vy = Math.sin(angle) * power + mallet.vy * 0.5;
+
+
+audio.playHit(0.4, 1.2);
+createSpark(puck.x, puck.y, mallet.color);
+}
+}
+
+
+function updatePhysics() {
+const goalLeft = (W - GOAL_WIDTH) / 2;
+const goalRight = (W + GOAL_WIDTH) / 2;
+
+
+for (let i = pucks.length - 1; i >= 0; i--) {
+const p = pucks[i];
+
+
+p.x += p.vx;
+p.y += p.vy;
+p.vx *= 0.99;
+p.vy *= 0.99;
+
+
+// Trail
+p.trail.push({ x: p.x, y: p.y });
+if (p.trail.length > 6) p.trail.shift();
+
+
+// Wall Collisions
+if (p.x - p.radius < 0) {
+p.x = p.radius; p.vx *= -1;
+audio.playHit(0.2, 0.8);
+} else if (p.x + p.radius > W) {
+p.x = W - p.radius; p.vx *= -1;
+audio.playHit(0.2, 0.8);
+}
+
+
+// Top Goal / Wall
+if (p.y - p.radius < 0) {
+if (p.x > goalLeft && p.x < goalRight) {
+scoreGoal('p1', p);
+continue;
+} else {
+p.y = p.radius; p.vy *= -1;
+audio.playHit(0.2, 0.8);
+}
+}
+
+
+// Bottom Goal / Wall
+if (p.y + p.radius > H) {
+if (p.x > goalLeft && p.x < goalRight) {
+scoreGoal('p2', p);
+continue;
+} else {
+p.y = H - p.radius; p.vy *= -1;
+audio.playHit(0.2, 0.8);
+}
+}
+
+
+// Mallet Collisions
+handleCircleCollision(p, p1);
+handleCircleCollision(p, p2);
+}
+
+
+// Particles Update
+for (let i = particles.length - 1; i >= 0; i--) {
+const pt = particles[i];
+pt.x += pt.vx; pt.y += pt.vy;
+pt.life -= 0.04;
+if (pt.life <= 0) particles.splice(i, 1);
+}
+}
+
+
+let isScoring = false;
+function scoreGoal(winner, puck) {
+if (isScoring && ballCountConfig === 1) return;
+
+
+audio.playGoal();
+if (winner === 'p1') p1Score++;
+if (winner === 'p2') p2Score++;
+
+
+updateScores();
+
+
+if (p1Score >= maxScore || p2Score >= maxScore) {
+isScoring = true;
+isPlaying = false;
+
+
+const p1Name = document.getElementById('p1-label').textContent;
+const p2Name = document.getElementById('p2-label').textContent;
+const winnerName = winner === 'p1' ? p1Name : p2Name;
+
+
+const resultOverlay = document.getElementById('result-overlay');
+document.getElementById('winner-title').textContent = ` ${winnerName} の勝利！`;
+document.getElementById('winner-detail').textContent = `最終スコア: ${p1Score} - ${p2Score}`;
+
+
+setTimeout(() => {
+resultOverlay.classList.remove('hidden');
+isScoring = false;
+}, 800);
+} else {
+respawnSinglePuck(puck);
+}
+}
+
+
+function drawRink() {
+ctx.clearRect(0, 0, W, H);
+
+
+// Rink Background
+ctx.fillStyle = '#030712';
+ctx.fillRect(0, 0, W, H);
+
+
+// Center Dashed Line
+ctx.strokeStyle = '#1e293b';
+ctx.lineWidth = 3;
+ctx.setLineDash([10, 10]);
+ctx.beginPath();
+ctx.moveTo(0, H / 2);
+ctx.lineTo(W, H / 2);
+ctx.stroke();
+ctx.setLineDash([]);
+
+
+// Center Circle
+ctx.strokeStyle = p1.color;
+ctx.shadowColor = p1.color;
+ctx.shadowBlur = 8;
+ctx.beginPath();
+ctx.arc(W / 2, H / 2, 45, 0, Math.PI * 2);
+ctx.stroke();
+
+
+// Goals
+const goalLeft = (W - GOAL_WIDTH) / 2;
+
+
+// Top Goal (P2 / CPU Color)
+ctx.fillStyle = `${p2.color}40`;
+ctx.strokeStyle = p2.color;
+ctx.shadowColor = p2.color;
+ctx.shadowBlur = 12;
+ctx.fillRect(goalLeft, 0, GOAL_WIDTH, 10);
+ctx.strokeRect(goalLeft, 0, GOAL_WIDTH, 10);
+
+
+// Bottom Goal (P1 Color)
+ctx.fillStyle = `${p1.color}40`;
+ctx.strokeStyle = p1.color;
+ctx.shadowColor = p1.color;
+ctx.shadowBlur = 12;
+ctx.fillRect(goalLeft, H - 10, GOAL_WIDTH, 10);
+ctx.strokeRect(goalLeft, H - 10, GOAL_WIDTH, 10);
+
+
+ctx.shadowBlur = 0;
+}
+
+
+function drawEntities() {
+const style = BALL_COLORS[ballStyleConfig] || BALL_COLORS.yellow;
+
+
+// Draw Pucks & Trails
+pucks.forEach(p => {
+// Trail
+for (let i = 0; i < p.trail.length; i++) {
+const pt = p.trail[i];
+ctx.fillStyle = style.glow;
+ctx.globalAlpha = ((i + 1) / p.trail.length) * 0.35;
+ctx.beginPath();
+ctx.arc(pt.x, pt.y, p.radius * ((i + 1) / p.trail.length), 0, Math.PI * 2);
+ctx.fill();
+}
+ctx.globalAlpha = 1.0;
+
+
+// Puck Body
+ctx.fillStyle = style.fill;
+ctx.shadowColor = style.glow;
+ctx.shadowBlur = style.isPingPong ? 4 : 16;
+ctx.beginPath();
+ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+ctx.fill();
+
+
+// Ping-pong ball shading detail
+if (style.isPingPong) {
+ctx.strokeStyle = '#cbd5e1';
+ctx.lineWidth = 1.5;
+ctx.stroke();
+
+
+ctx.fillStyle = 'rgba(0, 0, 0, 0.1)';
+ctx.beginPath();
+ctx.arc(p.x + 3, p.y + 3, p.radius * 0.6, 0, Math.PI * 2);
+ctx.fill();
+}
+});
+
+
+// Mallets
+[p1, p2].forEach(m => {
+ctx.fillStyle = m.color;
+ctx.shadowColor = m.color;
+ctx.shadowBlur = 15;
+ctx.beginPath();
+ctx.arc(m.x, m.y, m.radius, 0, Math.PI * 2);
+ctx.fill();
+
+
+// Inner Handle
+ctx.fillStyle = '#ffffff';
+ctx.beginPath();
+ctx.arc(m.x, m.y, m.radius * 0.4, 0, Math.PI * 2);
+ctx.fill();
+});
+
+
+// Particles
+particles.forEach(p => {
+ctx.fillStyle = p.color;
+ctx.globalAlpha = p.life;
+ctx.beginPath();
+ctx.arc(p.x, p.y, 3, 0, Math.PI * 2);
+ctx.fill();
+});
+ctx.globalAlpha = 1.0;
+ctx.shadowBlur = 0;
+}
+
+
+function gameLoop() {
+if (!isPlaying) return;
+
+
+updateCPU();
+updatePhysics();
+
+
+drawRink();
+drawEntities();
+
+
+requestAnimationFrame(gameLoop);
+}
+
+
+// Init Setup
+resizeCanvas();
+</script>
+</body>
+</html>
